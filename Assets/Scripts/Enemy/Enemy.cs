@@ -8,10 +8,15 @@ public abstract class Enemy : MonoBehaviour
     [SerializeField] protected float speed;
     [SerializeField] protected int gems;
     [SerializeField] protected Transform pointA, pointB;
+    [SerializeField] protected float alertDistance;
+
+    //protected bool isHit = false;
 
     protected Transform target;
     protected Animator animator;
     protected SpriteRenderer spriteRenderer;
+    protected Transform player;
+    protected bool isDead = false;
 
     public virtual void Init()
     {
@@ -19,6 +24,8 @@ public abstract class Enemy : MonoBehaviour
         if (animator == null) { Debug.LogError(this.gameObject.name + ".animator is null"); }
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         if (spriteRenderer == null) { Debug.LogError(this.gameObject.name + ".renderer is null"); }
+        player = GameObject.FindGameObjectWithTag("Player").GetComponent<Transform>();
+        if (player == null) { Debug.LogError(this.gameObject.name+".player is null"); }
 
         target = pointB;
     }
@@ -30,7 +37,40 @@ public abstract class Enemy : MonoBehaviour
 
     public virtual void Update()
     {
-        if (animator.GetCurrentAnimatorStateInfo(0).IsName("Idle"))
+        if (isDead == true)
+        {
+            return;
+        }
+
+        //face player if in combat mode
+        if (animator.GetBool("InCombat") == true)
+        {
+            Vector2 direction = transform.position - player.position;
+            if (direction.x > 0)
+            {
+                spriteRenderer.flipX = true;
+                //transform.Rotate(0, 180f, 0);
+            }
+            else if (direction.x < 0)
+            {
+                spriteRenderer.flipX = false;
+            }
+
+            //if player moves away exit combat mode
+            //Debug.Log(this.gameObject.name + " to player distance: " + Vector2.Distance(transform.position, player.position));
+            if (Vector2.Distance(transform.position, player.position) > alertDistance)
+            {
+                //isHit = false;
+                animator.SetBool("InCombat", false);
+            }
+        }
+        else if (Vector2.Distance(transform.position, player.position) < alertDistance)
+        {
+            animator.SetTrigger("Idle");
+            animator.SetBool("InCombat", true);
+        }
+
+        if (animator.GetCurrentAnimatorStateInfo(0).IsName("Idle") || animator.GetBool("InCombat") == true)
         {
             return;
         }
@@ -41,14 +81,13 @@ public abstract class Enemy : MonoBehaviour
     {
         if (target == pointA)
         {
-            spriteRenderer.flipX = false;
+            spriteRenderer.flipX = true;
         }
         else if (target == pointB)
         {
-            spriteRenderer.flipX = true;
+            spriteRenderer.flipX = false;
         }
 
-        spriteRenderer.flipX = !spriteRenderer.flipX;
         if (Vector2.Distance(transform.position, target.position) < 0.1f)
         {
             animator.SetTrigger("Idle");
@@ -63,10 +102,13 @@ public abstract class Enemy : MonoBehaviour
                 target = pointA;
             }
         }
-        transform.position = Vector2.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
+        if (animator.GetBool("InCombat") == false)
+        {
+            transform.position = Vector2.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
+        }
     }
 
-    public void Attack()
+    public virtual void Attack()
     {
         Debug.Log("My name is: " + this.gameObject.name);
     }

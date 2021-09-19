@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, IDamageable
 {
     //handle
     private Rigidbody2D _rigidbody;
@@ -20,6 +20,8 @@ public class Player : MonoBehaviour
     private float _move;
     private bool _faceBack = false;
     private bool _jumpOffCD = true;
+
+    public int Health { get; set; }
 
     // Start is called before the first frame update
     void Start()
@@ -107,5 +109,16 @@ public class Player : MonoBehaviour
         _jumpOffCD = false;
         yield return _jumpCDTime;
         _jumpOffCD = true;
+    }
+
+    public void Damage()
+    {
+        Debug.Log(this.gameObject.name + " damage called");
+        //TODO cd system to prevent multiple hits
+        Health--;
+        if (Health < 1)
+        {
+            //TODO death anim
+        }
     }
 }
